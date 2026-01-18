@@ -8,20 +8,21 @@ WORKDIR /app
 # Production dependencies stage
 FROM base AS prod-deps
 COPY package.json pnpm-lock.yaml ./
-# Install only production dependencies
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
+# REMOVED id=pnpm to satisfy Railway security constraints
+RUN --mount=type=cache,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Build stage - install all dependencies and build
 FROM base AS build
 COPY package.json pnpm-lock.yaml ./
-# Install all dependencies (including dev dependencies)
-RUN --mount=type=cache,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
+# Install all dependencies for the build
+RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
 COPY . .
 RUN pnpm run build
 
-# Final stage - combine production dependencies and build output
-FROM node:23.11.1-alpine AS runner
+FROM node:23.11.1-slim AS runner
 WORKDIR /app
+# Set environment to production
+ENV NODE_ENV=production
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist
 
@@ -31,5 +32,5 @@ USER node
 # Expose port 8080
 EXPOSE 8080
 
-# Start the server
+# Start the server using the production script
 CMD ["node", "dist/index.js"]
