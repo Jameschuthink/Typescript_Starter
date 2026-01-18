@@ -15,7 +15,7 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-l
 FROM base AS build
 COPY package.json pnpm-lock.yaml ./
 # Install all dependencies (including dev dependencies)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,target=/pnpm/store pnpm install --prod --frozen-lockfile --ignore-scripts
 COPY . .
 RUN pnpm run build
 
